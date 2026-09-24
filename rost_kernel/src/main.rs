@@ -1,19 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(
-    const_fn,
-    global_asm,
-    abi_x86_interrupt,
-    asm,
-    alloc,
-    alloc_error_handler,
-    lang_items,
-    naked_functions,
-    const_vec_new,
-    panic_info_message,
-    const_slice_len,
-    never_type
-)]
+#![feature(abi_x86_interrupt)]
 #![allow(unused)]
 
 #[macro_use]
@@ -22,7 +9,6 @@ extern crate bootloader;
 extern crate linked_list_allocator;
 extern crate rost_fs;
 extern crate spin;
-extern crate volatile;
 extern crate x86_64;
 extern crate xmas_elf;
 
@@ -51,7 +37,6 @@ use alloc::vec::Vec;
 use fs::*;
 use memory::frame_allocator::FrameStackAllocator;
 use x86_64::structures::paging::*;
-use x86_64::ux::u9;
 use x86_64::{PhysAddr, VirtAddr};
 
 use linked_list_allocator::LockedHeap;
@@ -63,7 +48,7 @@ static DISK_IMAGE: &'static [u8] = include_bytes!("../../disk.img");
 
 use consts::*;
 
-global_asm!(include_str!("routines.S"));
+core::arch::global_asm!(include_str!("routines.S"));
 
 pub fn io_wait() {
     let mut port = x86_64::instructions::port::Port::new(0x80);
@@ -97,7 +82,7 @@ pub extern "C" fn kernel_init() {
         // initalize heap allocator
         ALLOCATOR
             .lock()
-            .init(KERNEL_HEAP_START as usize, KERNEL_HEAP_SIZE as usize);
+            .init(KERNEL_HEAP_START as *mut u8, KERNEL_HEAP_SIZE as usize);
 
         time::set_interval(5000);
         gdt::init();

@@ -39,9 +39,23 @@ struct ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
-use volatile::Volatile;
-
 use core::sync::atomic::{AtomicBool, Ordering};
+
+/// Minimal stand-in for the `volatile` crate's wrapper type, whose API changed
+/// shape completely after 0.2. Only `read`/`write` were ever used here.
+#[derive(Clone, Copy)]
+#[repr(transparent)]
+struct Volatile<T: Copy>(T);
+
+impl<T: Copy> Volatile<T> {
+    fn read(&self) -> T {
+        unsafe { core::ptr::read_volatile(&self.0) }
+    }
+
+    fn write(&mut self, value: T) {
+        unsafe { core::ptr::write_volatile(&mut self.0, value) }
+    }
+}
 
 struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
@@ -91,7 +105,7 @@ impl Writer {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
-                0x20...0x7e | b'\n' => self.write_byte(byte),
+                0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // not part of printable ASCII range
                 _ => self.write_byte(0xfe),
             }

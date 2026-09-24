@@ -1,7 +1,6 @@
 #![warn(clippy::all)]
 #![no_std]
 #![no_main]
-#![feature(start)]
 
 #[macro_use]
 extern crate rost_std;
@@ -66,9 +65,8 @@ const COLORS: &[Color] = &[
 
 const PROGRESS : &[&[u8]]= &[b"   .   ", b"   .   ", b"  ...  ", b"  ...  ", b" ..... ", b" ..... ", b"........", b"........"];
 
-#[start]
 #[no_mangle]
-fn _start() {
+pub extern "C" fn _start() {
     vga::map();
     let mut radius = 6;
     for (&color, progress) in COLORS.iter().zip(PROGRESS.iter().cycle()) {

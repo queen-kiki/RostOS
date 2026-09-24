@@ -1,11 +1,9 @@
 pub mod block;
 
 use core::mem;
-use core::option::NoneError;
 
 use self::block::{Block, RootBlock, BLOCK_SIZE};
 use crate::node::node::{self, Node};
-use core::ptr::Unique;
 
 #[repr(C)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -56,31 +54,36 @@ pub trait Disk {
 }
 
 pub struct RamDisk {
-    start: Unique<Block>,
+    start: *mut Block,
     block_count: u64,
 }
 
 impl RamDisk {
     pub const fn new_empty() -> Self {
         Self {
-            start: Unique::empty(),
+            start: core::ptr::null_mut(),
             block_count: 0,
         }
     }
 
     pub unsafe fn init(&mut self, start_addr: u64, size: u64) {
         *self = Self {
-            start: Unique::new_unchecked((start_addr & !0xfff) as _),
+            start: (start_addr & !0xfff) as *mut Block,
             block_count: (size & !0xfff) / BLOCK_SIZE,
         }
     }
 }
 
+// `RamDisk` previously stored a `core::ptr::Unique<Block>`, which carries these
+// bounds; the raw pointer replacing it does not, so restore them explicitly.
+unsafe impl Send for RamDisk {}
+unsafe impl Sync for RamDisk {}
+
 impl Disk for RamDisk {
     fn get_block(&self, addr: DiskAddress) -> Option<&mut Block> {
         unsafe {
             if addr.index()? < self.block_count() {
-                Some(&mut *self.start.as_ptr().offset(addr.index()? as _))
+                Some(&mut *self.start.offset(addr.index()? as _))
             } else {
                 None
             }
@@ -92,10 +95,10 @@ impl Disk for RamDisk {
     }
 }
 
-pub fn format(disk: &impl Disk, name: &[u8]) -> Result<(), NoneError> {
+pub fn format(disk: &impl Disk, name: &[u8]) -> Option<()> {
     let root_block = block::get_root_block(disk);
 
     *root_block = RootBlock::init(name);
 
-    Ok(())
+    Some(())
 }

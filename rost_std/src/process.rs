@@ -1,6 +1,5 @@
 ///! This module provides access to process control functionality.
 
-#[macro_use]
 use crate::syscall::{self, *};
 
 /// This struct represents a process.

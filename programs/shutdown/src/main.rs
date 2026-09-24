@@ -1,7 +1,6 @@
 #![warn(clippy::all)]
 #![no_std]
 #![no_main]
-#![feature(start)]
 
 #[macro_use]
 extern crate rost_std;
@@ -15,9 +14,8 @@ use rost_std::vga::{Color, ColorCode, VGA_HEIGHT, VGA_WIDTH};
 use rost_std::port;
 
 
-#[start]
 #[no_mangle]
-fn _start() {
+pub extern "C" fn _start() {
     unsafe {
         port::write::<u8>(0xf4, 0x00);
     }

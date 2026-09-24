@@ -2,7 +2,6 @@ use core::mem;
 
 use alloc::vec::Vec;
 use core::cmp::*;
-use core::option::NoneError;
 
 use crate::disk::{Disk, DiskAddress};
 
@@ -30,29 +29,29 @@ impl Node {
     };
 }
 
-pub fn clear(disk: &impl Disk, node_addr: DiskAddress) -> Result<(), NoneError> {
+pub fn clear(disk: &impl Disk, node_addr: DiskAddress) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
     node.data_size = 0;
     block::deallocate_data_block(disk, node.data_start);
 
-    Ok(())
+    Some(())
 }
 
 pub fn copy_data(
     disk: &impl Disk,
     node_addr: DiskAddress,
     buffer: &mut Vec<u8>,
-) -> Result<(), NoneError> {
+) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
     if buffer.len() > 0 {
-        return Err(NoneError);
+        return None;
     }
 
     block::copy_from_data_block(disk, node.data_start, buffer, node.data_size)?;
 
-    Ok(())
+    Some(())
 }
 
 pub fn copy_data_len(
@@ -60,20 +59,20 @@ pub fn copy_data_len(
     node_addr: DiskAddress,
     buffer: &mut Vec<u8>,
     len: u64,
-) -> Result<(), NoneError> {
+) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
     if buffer.len() > 0 {
-        return Err(NoneError);
+        return None;
     }
 
     if len > node.data_size {
-        return Err(NoneError);
+        return None;
     }
 
     block::copy_from_data_block(disk, node.data_start, buffer, len)?;
 
-    Ok(())
+    Some(())
 }
 
 pub fn copy_data_slice(
@@ -82,24 +81,24 @@ pub fn copy_data_slice(
     buffer: &mut Vec<u8>,
     start: u64,
     end: u64,
-) -> Result<(), NoneError> {
+) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
     if buffer.len() > 0 {
         buffer.clear();
-        return Err(NoneError);
+        return None;
     }
 
     if end > node.data_size {
-        return Err(NoneError);
+        return None;
     }
 
     block::copy_slice_from_data_block(disk, node.data_start, buffer, start, end)?;
 
-    Ok(())
+    Some(())
 }
 
-pub fn write_data(disk: &impl Disk, node_addr: DiskAddress, data: &[u8]) -> Result<(), NoneError> {
+pub fn write_data(disk: &impl Disk, node_addr: DiskAddress, data: &[u8]) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
     if node.data_start.is_null() {
@@ -111,7 +110,7 @@ pub fn write_data(disk: &impl Disk, node_addr: DiskAddress, data: &[u8]) -> Resu
 
     node.data_size = data.len() as u64;
 
-    Ok(())
+    Some(())
 }
 
 pub fn get_node(disk: &impl Disk, address: DiskAddress) -> Option<&mut Node> {
@@ -154,7 +153,7 @@ pub fn allocate_node(disk: &impl Disk) -> Option<DiskAddress> {
     Some(address)
 }
 
-pub fn deallocate_node(disk: &impl Disk, node_addr: DiskAddress) -> Result<(), NoneError> {
+pub fn deallocate_node(disk: &impl Disk, node_addr: DiskAddress) -> Option<()> {
     let old_head = block::get_root_block(disk).free_nodes_start;
 
     *get_node(disk, node_addr)? = Node {
@@ -164,7 +163,7 @@ pub fn deallocate_node(disk: &impl Disk, node_addr: DiskAddress) -> Result<(), N
 
     block::get_root_block(disk).free_nodes_start = node_addr;
 
-    Ok(())
+    Some(())
 }
 
 pub fn allocate_node_in_block(disk: &impl Disk, address: DiskAddress) -> Option<DiskAddress> {

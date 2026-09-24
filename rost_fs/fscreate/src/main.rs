@@ -52,7 +52,7 @@ impl FileDisk {
 
 impl Disk for FileDisk {
     fn get_block(&self, index: DiskAddress) -> Option<&mut Block> {
-        unsafe { (*self.data.get()).get_mut(index.index()? as usize) }
+        unsafe { (&mut *self.data.get()).get_mut(index.index()? as usize) }
     }
 
     fn block_count(&self) -> u64 {

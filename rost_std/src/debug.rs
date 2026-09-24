@@ -2,7 +2,6 @@
 
 use core::fmt;
 
-#[macro_use]
 use crate::syscall::{self, *};
 
 struct DebugPrinter;
@@ -32,7 +31,7 @@ pub fn write_bytes(bytes: &[u8]) {
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
 
-    DebugPrinter.write_fmt(args);
+    let _ = DebugPrinter.write_fmt(args);
 }
 
 #[macro_export]

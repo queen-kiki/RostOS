@@ -1,7 +1,6 @@
 #![warn(clippy::all)]
 #![no_std]
 #![no_main]
-#![feature(start)]
 
 extern crate rost_std;
 
@@ -99,9 +98,8 @@ impl GameObject for Ball {
     }
 }
 
-#[start]
 #[no_mangle]
-fn _start() {
+pub extern "C" fn _start() {
     vga::map();
     vga::clear();
 

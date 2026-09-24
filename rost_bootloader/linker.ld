@@ -49,4 +49,14 @@ SECTIONS {
 
     __bootloader_end = .;
     _kernel_start_addr = .;
+
+    /* Unwind tables are dead weight under `panic = "abort"`, and as orphan
+       sections the linker would place them at 0x500 -- inside the region this
+       script reserves for the kernel buffer and the initial page tables. */
+    /DISCARD/ : {
+        *(.eh_frame)
+        *(.eh_frame_hdr)
+        *(.comment)
+        *(.note .note.*)
+    }
 }

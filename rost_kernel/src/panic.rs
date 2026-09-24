@@ -1,11 +1,9 @@
 use vga_buffer;
 
-use core::alloc::Layout;
 use core::panic::PanicInfo;
 
 use alloc::string::String;
 
-#[no_mangle]
 #[panic_handler]
 pub fn panic(panic_info: &PanicInfo) -> ! {
     let current = ::process::Process::current();
@@ -16,16 +14,8 @@ pub fn panic(panic_info: &PanicInfo) -> ! {
         ::process::current_pid()
     );
 
-    if let Some(msg) = panic_info.message() {
-        println!("{}", msg);
-    } else {
-        println!("no message");
-    }
+    // `PanicInfo::message` is stable now and always yields a message.
+    println!("{}", panic_info.message());
 
     loop {}
-}
-
-#[alloc_error_handler]
-pub fn oom(_: Layout) -> ! {
-    panic!("Out of Memory!")
 }

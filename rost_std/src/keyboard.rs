@@ -220,11 +220,11 @@ impl KeyEvent {
     /// Converts a scancode to a keyboard event.
     pub fn from_scancode(scancode: u8) -> Option<Self> {
         match scancode {
-            PRESS_START...PRESS_END => Some(KeyEvent {
+            PRESS_START..=PRESS_END => Some(KeyEvent {
                 keycode: scancode,
                 kind: EventKind::Press,
             }),
-            RELEASE_START...RELEASE_END => Some(KeyEvent {
+            RELEASE_START..=RELEASE_END => Some(KeyEvent {
                 keycode: scancode - 0x80,
                 kind: EventKind::Release,
             }),

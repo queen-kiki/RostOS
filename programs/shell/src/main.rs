@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(asm, start)]
 
 #[macro_use]
 extern crate rost_std;
@@ -19,7 +18,6 @@ use rost_std::ascii::BACKSPACE;
 
 use core::cell::RefCell;
 use core::sync::atomic::*;
-use core::mem::uninitialized;
 
 use spin::Mutex;
 
@@ -147,7 +145,11 @@ impl TerminalBuf {
     }
 
     pub fn get_line(&self, buf: &mut [u8]) -> Option<usize> {
-        if self.buffer_ready.compare_and_swap(true, false, Ordering::SeqCst) {
+        if self
+            .buffer_ready
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
             buf.copy_from_slice(&(*self.buffer.lock())[0..buf.len()]);
             Some(self.buffer_len.load(Ordering::SeqCst))
         } else {
@@ -196,7 +198,6 @@ fn prompt() {
 }
 
 #[no_mangle]
-#[start]
 pub extern "C" fn _start() {
     vga::map();
     signal::subscribe(signal::SIGNAL_KEYBOARD, keyboard_handler);

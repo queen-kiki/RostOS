@@ -1,27 +1,17 @@
-#![feature(lang_items)]
-#![feature(global_asm)]
-#![feature(try_from)]
-#![feature(step_trait)]
-#![feature(asm)]
-#![feature(nll)]
-#![feature(const_fn)]
 #![no_std]
 #![no_main]
 
 extern crate bootloader;
-extern crate usize_conversions;
 extern crate x86_64;
 extern crate xmas_elf;
-#[macro_use]
-extern crate fixedvec;
 
 use bootloader::bootinfo::BootInfo;
+use core::arch::global_asm;
+use core::mem::MaybeUninit;
 use core::panic::PanicInfo;
 use core::slice;
-use usize_conversions::usize_from;
 use x86_64::structures::paging::{Mapper, RecursivePageTable};
-use x86_64::structures::paging::{Page, PageTableFlags, PhysFrame, Size2MiB};
-use x86_64::ux::u9;
+use x86_64::structures::paging::{Page, PageTableFlags, PageTableIndex, PhysFrame, Size2MiB};
 pub use x86_64::PhysAddr;
 use x86_64::VirtAddr;
 
@@ -40,6 +30,9 @@ mod boot_info;
 mod frame_allocator;
 mod page_table;
 mod printer;
+
+/// The maximum number of program segments the kernel ELF may contain.
+const MAX_SEGMENTS: usize = 32;
 
 pub struct IdentityMappedAddr(PhysAddr);
 
@@ -69,20 +62,21 @@ pub extern "C" fn load_elf(
     bootloader_end: PhysAddr,
 ) -> ! {
     use bootloader::bootinfo::{MemoryRegion, MemoryRegionType};
-    use fixedvec::FixedVec;
     use xmas_elf::program::{ProgramHeader, ProgramHeader64};
 
     printer::Printer.clear_screen();
 
     let mut memory_map = boot_info::create_from(memory_map_addr, memory_map_entry_count);
 
-    // Extract required information from the ELF file.
-    let mut preallocated_space = alloc_stack!([ProgramHeader64; 32]);
-    let mut segments = FixedVec::new(&mut preallocated_space);
+    // Extract required information from the ELF file. The headers are copied
+    // into a fixed-size buffer because the ELF file itself is unmapped below.
+    let mut segment_buf: [MaybeUninit<ProgramHeader64>; MAX_SEGMENTS] =
+        [const { MaybeUninit::uninit() }; MAX_SEGMENTS];
+    let mut segment_count = 0;
     let entry_point;
     {
-        let kernel_start_ptr = usize_from(kernel_start.as_u64()) as *const u8;
-        let kernel = unsafe { slice::from_raw_parts(kernel_start_ptr, usize_from(kernel_size)) };
+        let kernel_start_ptr = kernel_start.as_u64() as usize as *const u8;
+        let kernel = unsafe { slice::from_raw_parts(kernel_start_ptr, kernel_size as usize) };
         let elf_file = xmas_elf::ElfFile::new(kernel).unwrap();
         xmas_elf::header::sanity_check(&elf_file).unwrap();
 
@@ -90,19 +84,30 @@ pub extern "C" fn load_elf(
 
         for program_header in elf_file.program_iter() {
             match program_header {
-                ProgramHeader::Ph64(header) => segments
-                    .push(*header)
-                    .expect("does not support more than 32 program segments"),
+                ProgramHeader::Ph64(header) => {
+                    assert!(
+                        segment_count < MAX_SEGMENTS,
+                        "does not support more than 32 program segments"
+                    );
+                    segment_buf[segment_count].write(*header);
+                    segment_count += 1;
+                }
                 ProgramHeader::Ph32(_) => panic!("does not support 32 bit elf files"),
             }
         }
     }
+    let segments: &[ProgramHeader64] = unsafe {
+        slice::from_raw_parts(
+            segment_buf.as_ptr() as *const ProgramHeader64,
+            segment_count,
+        )
+    };
 
     // Enable support for the no-execute bit in page tables.
     enable_nxe_bit();
 
     // Create a RecursivePageTable
-    let recursive_index = u9::new(511);
+    let recursive_index = PageTableIndex::new(511);
     let recursive_page_table_addr = Page::from_page_table_indices(
         recursive_index,
         recursive_index,
@@ -162,7 +167,7 @@ pub extern "C" fn load_elf(
     // Map kernel segments.
     let stack_end = page_table::map_kernel(
         kernel_start.phys(),
-        &segments,
+        segments,
         &mut rec_page_table,
         &mut frame_allocator,
     )
@@ -218,20 +223,8 @@ fn enable_write_protect_bit() {
 }
 
 #[panic_handler]
-#[no_mangle]
-pub extern "C" fn panic(info: &PanicInfo) -> ! {
+pub fn panic(info: &PanicInfo) -> ! {
     use core::fmt::Write;
-    write!(::printer::Printer, "{}", info).unwrap();
-    loop {}
-}
-
-#[lang = "eh_personality"]
-#[no_mangle]
-pub extern "C" fn eh_personality() {
-    loop {}
-}
-
-#[no_mangle]
-pub extern "C" fn _Unwind_Resume() {
+    let _ = write!(::printer::Printer, "{}", info);
     loop {}
 }

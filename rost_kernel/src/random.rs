@@ -1,27 +1,15 @@
-extern crate rand;
+use core::arch::asm;
 
-use self::rand::prelude::*;
-use self::rand::rngs::SmallRng;
-use spin::{Once, RwLock};
-
-static RNG: Once<RwLock<SmallRng>> = Once::new();
-
+/// Reads a hardware random number via `rdrand`.
 pub fn random_int() -> i64 {
-    let ret;
-    unsafe {
-        asm!("rdrand $0" :"=r"(ret):::);
-    }
-
-    //RNG.call_once(||RwLock::new(SmallRng::from_seed([12;16]))).write().next_u64() as _
-    ret
+    random_uint() as i64
 }
 
+/// Reads a hardware random number via `rdrand`.
 pub fn random_uint() -> u64 {
-    let ret;
+    let ret: u64;
     unsafe {
-        asm!("rdrand $0" :"=r"(ret):::);
+        asm!("rdrand {}", out(reg) ret, options(nomem, nostack));
     }
-
-    //RNG.call_once(||RwLock::new(SmallRng::from_seed([12;16]))).write().next_u64() as _
     ret
 }

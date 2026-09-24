@@ -39,7 +39,7 @@ impl<'a, D: disk::Disk> NodeSet<'a> for NodeTree<'a, D> {
     type Disk = D;
 
     fn insert_node(&'a self, key: i64) -> NodeResult<Node<'a, D>> {
-        if let Ok(addr) = tree::insert_node(self.disk, key) {
+        if let Some(addr) = tree::insert_node(self.disk, key) {
             Ok(Node {
                 disk: self.disk,
                 addr,
@@ -77,29 +77,29 @@ impl<'a, D: disk::Disk> Node<'a, D> {
 
     pub fn read_data(&self, buf: &mut Vec<u8>) -> NodeResult<()> {
         match node::copy_data(self.disk, self.addr, buf) {
-            Err(_) => Err(NodeError::ReadError),
-            Ok(()) => Ok(()),
+            None => Err(NodeError::ReadError),
+            Some(()) => Ok(()),
         }
     }
 
     pub fn read_data_len(&self, buf: &mut Vec<u8>, len: u64) -> NodeResult<()> {
         match node::copy_data_len(self.disk, self.addr, buf, len) {
-            Err(_) => Err(NodeError::ReadError),
-            Ok(()) => Ok(()),
+            None => Err(NodeError::ReadError),
+            Some(()) => Ok(()),
         }
     }
 
     pub fn read_data_slice(&self, buf: &mut Vec<u8>, start: u64, end: u64) -> NodeResult<()> {
         match node::copy_data_slice(self.disk, self.addr, buf, start, end) {
-            Err(_) => Err(NodeError::ReadError),
-            Ok(()) => Ok(()),
+            None => Err(NodeError::ReadError),
+            Some(()) => Ok(()),
         }
     }
 
     pub fn write_data(&self, data: &[u8]) -> NodeResult<()> {
         match node::write_data(self.disk, self.addr, data) {
-            Err(_) => Err(NodeError::WriteError),
-            Ok(()) => Ok(()),
+            None => Err(NodeError::WriteError),
+            Some(()) => Ok(()),
         }
     }
 }

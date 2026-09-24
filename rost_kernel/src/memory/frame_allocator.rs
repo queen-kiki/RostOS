@@ -75,8 +75,8 @@ impl FrameStackAllocator {
     }
 }
 
-impl FrameAllocator<Size4KiB> for FrameStackAllocator {
-    fn alloc(&mut self) -> Option<PhysFrame> {
+unsafe impl FrameAllocator<Size4KiB> for FrameStackAllocator {
+    fn allocate_frame(&mut self) -> Option<PhysFrame> {
         if let Some(frame) = self.free_stack.pop() {
             Some(PhysFrame::containing_address(PhysAddr::new(
                 (frame * PAGE_SIZE) as u64,
@@ -101,7 +101,7 @@ impl FrameAllocator<Size4KiB> for FrameStackAllocator {
 }
 
 impl FrameDeallocator<Size4KiB> for FrameStackAllocator {
-    fn dealloc(&mut self, frame: PhysFrame<Size4KiB>) {
+    unsafe fn deallocate_frame(&mut self, frame: PhysFrame<Size4KiB>) {
         let frame = frame.start_address().as_u64() as u64 / PAGE_SIZE;
         if !self.free_stack.push(frame) {
             println!("framestack full!");

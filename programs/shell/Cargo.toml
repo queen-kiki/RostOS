@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 rost_std = {path="../../rost_std"}
-spin = "*"
+spin = "0.9"

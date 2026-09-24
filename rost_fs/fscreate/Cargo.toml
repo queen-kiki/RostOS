@@ -5,6 +5,5 @@ authors = ["kryo4096 <kryo4096@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "*"
-rost_fs = {path = "../" }
+rost_fs = { path = "../" }
 walkdir = "2"

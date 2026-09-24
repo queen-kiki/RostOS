@@ -39,12 +39,12 @@ pub const SYS_VMAP: u64 = 0x50;
 /// This system call maps virtual memory to specified frames.
 pub const SYS_PMAP: u64 = 0x51;
 
-global_asm!(
+core::arch::global_asm!(
     "
 .global _syscall
 
 _syscall:
-    int $0x80
+    int 0x80
     ret
 "
 );

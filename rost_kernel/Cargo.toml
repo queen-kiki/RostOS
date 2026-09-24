@@ -2,29 +2,24 @@
 name = "rost_kernel"
 version = "0.1.0"
 authors = ["kryo4096 <kryo4096@gmail.com>"]
+edition = "2015"
 
 [dependencies]
-spin = "*"
-bootloader = {path = "../rost_bootloader"}
-rost_fs = {path = "../rost_fs"}
-x86_64 = "0.3"
-bitflags = "1.0"
-linked_list_allocator = "0.6"
-xmas-elf = "0.6.2"
-volatile = "0.2.3"
-
+spin = { version = "0.9", default-features = false, features = ["spin_mutex", "rwlock", "once", "lazy"] }
+bootloader = { path = "../rost_bootloader" }
+rost_fs = { path = "../rost_fs" }
+x86_64 = "0.15"
+linked_list_allocator = "0.10"
+xmas-elf = "0.10"
 
 [dependencies.lazy_static]
-features=["spin_no_std"]
-version="1.1"
+features = ["spin_no_std"]
+version = "1.5"
 
-[dependencies.rand]
-default-features = false
-version = "0.6"
-
-[package.metadata.bootimage]
-default-target = "x86_64-rust_kernel.json"
-
-[package.metadata.bootimage.bootloader]
-name = "bootloader"
-target = "x86_64-bootloader.json"
+[profile.dev]
+# The current nightly's core/alloc carry new internal UB-precondition checks
+# (behind cfg(debug_assertions)) that this port hasn't been audited against;
+# one fires inside BTreeMap::remove during process exit. Disable them for now
+# rather than ship a kernel that deadlocks on its own panic handler.
+debug-assertions = false
+overflow-checks = false

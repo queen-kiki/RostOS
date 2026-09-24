@@ -1,7 +1,6 @@
 #![warn(clippy::all)]
 #![no_std]
 #![no_main]
-#![feature(start)]
 
 #[macro_use]
 extern crate rost_std;
@@ -13,7 +12,6 @@ use rost_std::signal;
 use rost_std::vga;
 use rost_std::vga::{Color, ColorCode, VGA_HEIGHT, VGA_WIDTH};
 
-#[macro_use]
 use rost_std::debug;
 
 use spin::RwLock;
@@ -28,9 +26,8 @@ extern "C" fn keyboard_handler(scancode: u64, _: u64, _: u64, _: u64) {
     }
 }
 
-#[start]
 #[no_mangle]
-fn _start() {
+pub extern "C" fn _start() {
     signal::subscribe(signal::SIGNAL_KEYBOARD, keyboard_handler);
 
     loop {

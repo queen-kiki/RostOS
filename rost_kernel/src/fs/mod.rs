@@ -15,7 +15,7 @@ static mut DISK: RamDisk = RamDisk::new_empty();
 static NODE_TREE: Once<RwLock<NodeTree<'static, RamDisk>>> = Once::new();
 
 fn create_tree() -> RwLock<NodeTree<'static, RamDisk>> {
-    unsafe { RwLock::new(NodeTree::new(&mut DISK)) }
+    unsafe { RwLock::new(NodeTree::new(&mut *core::ptr::addr_of_mut!(DISK))) }
 }
 
 pub fn tree() -> RwLockReadGuard<'static, NodeTree<'static, RamDisk>> {
@@ -32,7 +32,7 @@ pub unsafe fn init() {
         RAMDISK_START + RAMDISK_SIZE,
         PageTableFlags::PRESENT | PageTableFlags::WRITABLE,
     );
-    DISK.init(RAMDISK_START, RAMDISK_SIZE);
+    (*core::ptr::addr_of_mut!(DISK)).init(RAMDISK_START, RAMDISK_SIZE);
 
     let disk = core::slice::from_raw_parts_mut(RAMDISK_START as *mut u8, RAMDISK_SIZE as _);
 

@@ -4,7 +4,6 @@ use core::ptr;
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering;
 
-#[macro_use]
 use crate::syscall;
 use crate::syscall::*;
 
@@ -74,7 +73,10 @@ fn check_mapped() {
 /// Maps a region of virtual memory to the VGA buffer. Operations writing to the buffer before it is mapped will panic the process.
 pub fn map() {
     unsafe {
-        if !VGA_MAPPED.compare_and_swap(false, true, Ordering::SeqCst) {
+        if VGA_MAPPED
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
             memory::map_to(VGA_ADDRESS as _, 0xb8000);
         }
     }
@@ -147,8 +149,9 @@ pub fn set_cursor(x: usize, y: usize) {
 /// Clears the invisible buffer.
 pub fn clear() {
     unsafe {
-        for chr in VGA_BUFFER.iter_mut() {
-            *chr = 0;
+        let buffer = (&raw mut VGA_BUFFER).cast::<u16>();
+        for i in 0..VGA_WIDTH * VGA_HEIGHT {
+            buffer.add(i).write(0);
         }
     }
 }
@@ -157,6 +160,10 @@ pub fn clear() {
 pub fn show() {
     check_mapped();
     unsafe {
-        ptr::copy(VGA_BUFFER.as_mut_ptr(), VGA_ADDRESS, VGA_WIDTH * VGA_HEIGHT);
+        ptr::copy(
+            (&raw mut VGA_BUFFER).cast::<u16>(),
+            VGA_ADDRESS,
+            VGA_WIDTH * VGA_HEIGHT,
+        );
     }
 }

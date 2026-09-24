@@ -1,6 +1,5 @@
 ///! This module contains procedues to change the virtual address space.
 
-#[macro_use]
 use crate::syscall::{self, *};
 
 /// Denotes the maximal address a user process can use.

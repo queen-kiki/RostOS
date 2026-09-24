@@ -8,8 +8,6 @@ use memory;
 use process::WaitReason;
 use process::{self, Process};
 use time;
-use x86_64::instructions::port::*;
-use x86_64::registers::model_specific::{Efer, EferFlags, Msr};
 use x86_64::structures::paging::PageTableFlags;
 use process::signal;
 

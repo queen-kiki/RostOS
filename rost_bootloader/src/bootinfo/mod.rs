@@ -46,7 +46,7 @@ extern "C" {
 }
 
 use x86_64::{
-    structures::paging::{PhysFrame, PhysFrameRange},
+    structures::paging::{frame::PhysFrameRange, PhysFrame},
     PhysAddr,
 };
 

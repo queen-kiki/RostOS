@@ -1,5 +1,4 @@
 .section .boot, "awx"
-.intel_syntax noprefix
 .code64
 
 # This stage calls into Rust code, passing various values as arguments.

@@ -2,11 +2,12 @@ use alloc::string::String;
 use consts::*;
 use process::{self, signal};
 use x86_64::instructions::port::Port;
-use x86_64::structures::idt::ExceptionStackFrame;
+use core::arch::asm;
+use x86_64::structures::idt::InterruptStackFrame;
 use x86_64::structures::idt::PageFaultErrorCode;
 use x86_64::VirtAddr;
 
-pub extern "x86-interrupt" fn breakpoint(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn breakpoint(frame: InterruptStackFrame) {
     println!(
         "breakpoint \nrip=0x{:x}",
         frame.instruction_pointer.as_u64()
@@ -15,7 +16,7 @@ pub extern "x86-interrupt" fn breakpoint(frame: &mut ExceptionStackFrame) {
 }
 
 pub extern "x86-interrupt" fn page_fault(
-    frame: &mut ExceptionStackFrame,
+    frame: InterruptStackFrame,
     pcode: PageFaultErrorCode,
 ) {
     {
@@ -27,7 +28,7 @@ pub extern "x86-interrupt" fn page_fault(
     let addr: u64;
 
     unsafe {
-        asm!("mov $0, cr2" : "=r"(addr) ::: "intel");
+        asm!("mov {}, cr2", out(reg) addr, options(nomem, nostack, preserves_flags));
     }
     println!("tried to access: 0x{:x}", addr);
     process::debug();
@@ -36,85 +37,85 @@ pub extern "x86-interrupt" fn page_fault(
     }
 }
 
-pub extern "x86-interrupt" fn double_fault(frame: &mut ExceptionStackFrame, error_code: u64) {
+pub extern "x86-interrupt" fn double_fault(frame: InterruptStackFrame, error_code: u64) -> ! {
     println!(
         "EXCEPTION: DOUBLE FAULT\n{:#?} ec: 0x{:x}",
         frame, error_code
     );
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn gpf(frame: &mut ExceptionStackFrame, error_code: u64) {
+pub extern "x86-interrupt" fn gpf(frame: InterruptStackFrame, error_code: u64) {
     println!("EXCEPTION: GENERAL PROTECTION FAULT\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn ui(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn ui(frame: InterruptStackFrame) {
     println!("EXCEPTION: INVALID INSTRUCTION\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn invalid_tss(frame: &mut ExceptionStackFrame, error_code: u64) {
+pub extern "x86-interrupt" fn invalid_tss(frame: InterruptStackFrame, error_code: u64) {
     println!("EXCEPTION: INVALID TSS\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
 pub extern "x86-interrupt" fn stack_segment_fault(
-    frame: &mut ExceptionStackFrame,
+    frame: InterruptStackFrame,
     error_code: u64,
 ) {
     println!("EXCEPTION: #SS\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn security_exception(frame: &mut ExceptionStackFrame, error_code: u64) {
+pub extern "x86-interrupt" fn security_exception(frame: InterruptStackFrame, error_code: u64) {
     println!("EXCEPTION: SECURITY EXEPTION\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
 pub extern "x86-interrupt" fn segment_not_present(
-    frame: &mut ExceptionStackFrame,
+    frame: InterruptStackFrame,
     error_code: u64,
 ) {
     println!("EXCEPTION: SEGMENT NOT PRESENT\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn overflow(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn overflow(frame: InterruptStackFrame) {
     println!("EXCEPTION: OVERFLOW\n{:#?}", frame);
     process::debug();
     loop {
-        unsafe { asm!("hlt") }
+        unsafe { asm!("hlt", options(nomem, nostack)) }
     }
 }
 
-pub extern "x86-interrupt" fn nmi(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn nmi(frame: InterruptStackFrame) {
     println!("NMI occured!\n{:#?}", frame);
     process::debug();
 }
 
-pub extern "x86-interrupt" fn divide_by_zero(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn divide_by_zero(frame: InterruptStackFrame) {
     println!("EXCEPTION: Division by Zero\n{:#?}", frame);
     process::debug();
     unsafe {
@@ -122,13 +123,13 @@ pub extern "x86-interrupt" fn divide_by_zero(frame: &mut ExceptionStackFrame) {
     }
 }
 
-pub extern "x86-interrupt" fn debug(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn debug(frame: InterruptStackFrame) {
     println!("DEBUG EXCEPTION\n{:#?}", frame);
     process::debug();
     loop {}
 }
 
-pub extern "x86-interrupt" fn bound_range_exceeded(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn bound_range_exceeded(frame: InterruptStackFrame) {
     println!("EXCEPTION: Bound Range Exceeded\n{:#?}", frame);
 
     process::debug();
@@ -167,7 +168,7 @@ pub fn syscall() {
 }
 */
 
-pub extern "x86-interrupt" fn tick(frame: &mut ExceptionStackFrame) {
+pub extern "x86-interrupt" fn tick(frame: InterruptStackFrame) {
     unsafe {
         ::time::tick();
         ::interrupt::send_eoi(0);
@@ -177,7 +178,7 @@ pub extern "x86-interrupt" fn tick(frame: &mut ExceptionStackFrame) {
 
 #[no_mangle]
 pub extern "C" fn __keyboard() {
-    let port = Port::new(KB_DATA_PORT);
+    let mut port = Port::new(KB_DATA_PORT);
     unsafe {
         let scancode: u8 = port.read();
         signal::signal_bus().call(1, scancode as _, 0, 0, 0);

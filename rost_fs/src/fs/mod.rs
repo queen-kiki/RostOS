@@ -2,12 +2,10 @@ use crate::disk::block::Block;
 use crate::disk::{Disk, DiskAddress};
 use crate::node::*;
 
-use rand::prelude::*;
-use rand::rngs::SmallRng;
-use spin::{Once, RwLock};
+use spin::Mutex;
 
-use alloc::prelude::*;
-use alloc::string::String;
+use alloc::borrow::ToOwned;
+use alloc::string::{String, ToString};
 
 pub mod path;
 
@@ -17,12 +15,38 @@ use core::ops::Deref;
 
 pub use crate::node::NodeID;
 
+/// A tiny deterministic xorshift64* generator, used to pick fresh node IDs.
+///
+/// This used to be `rand`'s `SmallRng` seeded with a constant; it is replaced by
+/// an inline generator so that `rost_fs` carries no external RNG dependency.
 pub fn random_id() -> i64 {
-    static RNG: Once<RwLock<SmallRng>> = Once::new();
-    RNG.call_once(|| RwLock::new(SmallRng::from_seed([12; 16])))
-        .write()
-        .next_u64() as _
+    static STATE: Mutex<u64> = Mutex::new(0x0123_4567_89ab_cdef);
+
+    let mut state = STATE.lock();
+
+    loop {
+        let mut x = *state;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        *state = x;
+
+        let id = x.wrapping_mul(0x2545_F491_4F6C_DD1D) as i64;
+
+        // Directory entries are stored as `name;<8 raw id bytes>\n`, so an id
+        // whose encoding contains either separator would corrupt the listing.
+        // Id 0 is reserved for the root node.
+        let bytes = id.to_ne_bytes();
+        if id != 0 && !bytes.contains(&CHILD_SEPARATOR) && !bytes.contains(&CHILD_TERMINATOR) {
+            return id;
+        }
+    }
 }
+
+/// Separates a child's name from its id in a directory listing.
+const CHILD_SEPARATOR: u8 = b';';
+/// Terminates a child record in a directory listing.
+const CHILD_TERMINATOR: u8 = b'\n';
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NodeHeader {
