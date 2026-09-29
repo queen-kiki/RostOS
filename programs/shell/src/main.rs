@@ -1,22 +1,19 @@
 #![no_std]
 #![no_main]
 
-#[macro_use]
 extern crate rost_std;
 
 use rost_std::vga;
-use rost_std::vga::{ColorCode, Color, VGA_WIDTH, VGA_HEIGHT};
+use rost_std::vga::{ColorCode, Color, VGA_WIDTH};
 use rost_std::signal;
 use rost_std::keyboard;
 use rost_std::keyboard::{KeyEvent, EventKind, KeyCase};
-use rost_std::debug;
 use rost_std::process;
 use rost_std::process::Process;
 use rost_std::misc::atoi;
 
 use rost_std::ascii::BACKSPACE;
 
-use core::cell::RefCell;
 use core::sync::atomic::*;
 
 use spin::Mutex;
@@ -45,7 +42,7 @@ extern "C" fn keyboard_handler(scancode: u64, _: u64, _:u64,_:u64) {
                     TERMINAL_BUFFER.new_line()
                 },
                 keyboard::KEY_BACKSPACE => TERMINAL_BUFFER.del_char(),
-                c =>  {
+                _c =>  {
                     let c = event.get_ascii(KeyCase::new(SHIFT.load(Ordering::SeqCst)));
                     TERMINAL_BUFFER.input_char(c);
                 }
@@ -99,10 +96,10 @@ impl TerminalBuf {
 
     pub fn print_ascii(&self, s: &[u8]) {
         for byte in s {
-            match byte {
-                &b'\n' => self.new_line(),
-                &BACKSPACE => self.del_char(),
-                &b => self.print_char(b),
+            match *byte {
+                b'\n' => self.new_line(),
+                BACKSPACE => self.del_char(),
+                b => self.print_char(b),
             }
         }
     }
@@ -134,7 +131,7 @@ impl TerminalBuf {
     pub fn new_line(&self) {
         if !self.buffer_ready.load(Ordering::SeqCst) && self.reading.fetch_and(false, Ordering::SeqCst) {
             self.buffer_len.store(self.cursor.load(Ordering::SeqCst) - self.read_start.load(Ordering::SeqCst), Ordering::SeqCst);
-            &(self.buffer.lock())[..VGA_WIDTH - self.read_start.load(Ordering::SeqCst)].copy_from_slice(&(*self.line.lock())[self.read_start.load(Ordering::SeqCst)..]);
+            (self.buffer.lock())[..VGA_WIDTH - self.read_start.load(Ordering::SeqCst)].copy_from_slice(&(*self.line.lock())[self.read_start.load(Ordering::SeqCst)..]);
             self.buffer_ready.store(true, Ordering::SeqCst);
             self.read_start.store(0, Ordering::SeqCst)
         }
@@ -158,6 +155,12 @@ impl TerminalBuf {
     }
 }
 
+impl Default for TerminalBuf {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 enum ShellError {
     CommandNotFound,
 }
@@ -167,18 +170,15 @@ type ShellResult<T> = Result<T, ShellError>;
 fn execute_command(cmd: &[u8]) -> ShellResult<Process> {
     let mut line = [0; 84];
     
-    (&mut line[..4]).copy_from_slice(b"bin/");
-    (&mut line[4..cmd.len() + 4]).copy_from_slice(cmd);
+    line[..4].copy_from_slice(b"bin/");
+    line[4..cmd.len() + 4].copy_from_slice(cmd);
 
     process::execute(&line[0..cmd.len() + 4]).ok_or(ShellError::CommandNotFound)
 }
 
 fn poll_line(line: &mut [u8]) -> &[u8] {
     loop {
-        match TERMINAL_BUFFER.get_line(line) {
-            Some(len) => break &line[0..len],
-            None => (),
-        }
+        if let Some(len) = TERMINAL_BUFFER.get_line(line) { break &line[0..len] }
     }
 }
 
@@ -209,9 +209,9 @@ pub extern "C" fn _start() {
         let split = line.iter().position(|b| *b==b' ');
 
         let mut cmd : &[u8];
-        let arg = if split.is_some() && line.len() - split.unwrap() > 0 {
-            cmd = &line[..split.unwrap()];
-            Some(&line[split.unwrap() + 1..])
+        let arg = if let Some(split) = split {
+            cmd = &line[..split];
+            Some(&line[split + 1..])
         } else {
             cmd = line;
             None
@@ -219,7 +219,7 @@ pub extern "C" fn _start() {
 
         let mut bg = false;
 
-        if cmd.len() > 1 && *cmd.get(0).unwrap() == b'&' {
+        if cmd.len() > 1 && *cmd.first().unwrap() == b'&' {
             bg = true;
             cmd = &cmd[1..]
         }

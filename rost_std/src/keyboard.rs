@@ -1,4 +1,4 @@
-///! This module contains procedures to interpret the data supplied by the keyboard signal.
+//! This module contains procedures to interpret the data supplied by the keyboard signal.
 use crate::ascii;
 
 const KEYMAP_LOWER: [u8; 87] = [

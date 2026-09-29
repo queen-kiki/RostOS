@@ -19,16 +19,16 @@ const ICW4_BUF_SLAVE: u8 = 0x08; /* Buffered mode/slave */
 const ICW4_BUF_MASTER: u8 = 0x0C; /* Buffered mode/master */
 const ICW4_SFNM: u8 = 0x10; /* Special fully nested (not) */
 
-struct PIC {
+struct Pic {
     command: Port<u8>,
     data: Port<u8>,
 }
 
-struct PICChain {
-    pics: [PIC; 2],
+struct PicChain {
+    pics: [Pic; 2],
 }
 
-impl PICChain {
+impl PicChain {
     pub unsafe fn send_eoi(&mut self, irq: u8) {
         let pic = if irq < 8 { 0 } else { 1 };
         self.pics[pic].command.write(PIC_EOI);
@@ -79,13 +79,13 @@ impl PICChain {
     }
 }
 
-static PIC_CHAIN: Mutex<PICChain> = Mutex::new(PICChain {
+static PIC_CHAIN: Mutex<PicChain> = Mutex::new(PicChain {
     pics: [
-        PIC {
+        Pic {
             command: Port::new(0x20),
             data: Port::new(0x21),
         },
-        PIC {
+        Pic {
             command: Port::new(0xA0),
             data: Port::new(0xA1),
         },

@@ -2,13 +2,9 @@
 #![no_std]
 #![no_main]
 
-#[macro_use]
 extern crate rost_std;
 
-use core::sync::atomic::*;
-use rost_std::keyboard::{EventKind, KeyEvent, KEY_DOWN, KEY_ESCAPE, KEY_S, KEY_UP, KEY_W};
 use rost_std::process;
-use rost_std::signal;
 use rost_std::vga;
 use rost_std::vga::{Color, ColorCode, VGA_HEIGHT, VGA_WIDTH};
 
@@ -68,8 +64,7 @@ const PROGRESS : &[&[u8]]= &[b"   .   ", b"   .   ", b"  ...  ", b"  ...  ", b" 
 #[no_mangle]
 pub extern "C" fn _start() {
     vga::map();
-    let mut radius = 6;
-    for (&color, progress) in COLORS.iter().zip(PROGRESS.iter().cycle()) {
+    for (radius, (&color, progress)) in (6..).zip(COLORS.iter().zip(PROGRESS.iter().cycle())) {
         vga::clear();
         vga::draw_string(35, 12, b"RostOS v0.1", ColorCode::new(Color::Black, color));
         vga::draw_string(37, 13, progress, ColorCode::new(Color::Black, color));
@@ -83,11 +78,10 @@ pub extern "C" fn _start() {
         }
 
         vga::show();
-        radius += 1;
         process::sleep(10);
     }
 
-    for i in 0..4 {
+    for _i in 0..4 {
     
     }
 

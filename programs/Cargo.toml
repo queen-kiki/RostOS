@@ -1,0 +1,10 @@
+[workspace]
+# Every member ends up as bin/<package name> on the ramdisk.
+members = ["init", "kbprobe", "logo", "pong", "shell", "shutdown"]
+resolver = "2"
+
+[profile.dev]
+# Debug info dwarfs the actual code: a program goes from ~2.8 MiB to ~100 KiB,
+# which is the difference between fitting in the ramdisk and not. The loader
+# only ever looks at PT_LOAD segments, so nothing is lost.
+strip = true

@@ -155,7 +155,7 @@ impl Process {
             state: State::Runnable,
             file_descriptors: BTreeMap::new(),
             name: path::head(elf_path).into(),
-            cwd: cwd,
+            cwd,
         };
 
         let old_table = memory::load_table(process.regs.cr3);
@@ -199,7 +199,7 @@ impl Process {
 
         ::fs::read_file(&mut *::fs::tree_mut(), file, &mut buf);
 
-        let info = ::elf::load_elf(&mut buf).expect("Process::create(): failed to load executable");
+        let info = ::elf::load_elf(&buf).expect("Process::create(): failed to load executable");
 
         process.push_to_stack(info.entry_point); //rip
         process.push_to_stack(0); //rbx

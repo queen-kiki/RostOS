@@ -34,6 +34,7 @@ mod printer;
 /// The maximum number of program segments the kernel ELF may contain.
 const MAX_SEGMENTS: usize = 32;
 
+#[repr(transparent)]
 pub struct IdentityMappedAddr(PhysAddr);
 
 impl IdentityMappedAddr {

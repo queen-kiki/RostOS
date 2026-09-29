@@ -39,7 +39,8 @@ pub fn insert_node(disk: &impl Disk, key: i64) -> Option<DiskAddress> {
     let mut current_node = block::get_root_block(disk).root_node;
 
     loop {
-        if let Some(node) = node::get_node(disk, current_node) {
+        {
+            let node = node::get_node(disk, current_node)?;
             match Ord::cmp(&key, &node.key) {
                 Less => {
                     if node.left_child.is_null() {
@@ -65,8 +66,6 @@ pub fn insert_node(disk: &impl Disk, key: i64) -> Option<DiskAddress> {
                     }
                 }
             }
-        } else {
-            return None;
         }
     }
 }

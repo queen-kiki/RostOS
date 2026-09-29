@@ -9,20 +9,17 @@ pub static mut MEMORY_MAP: MemoryMap = [MemoryRegion::EMPTY; 128];
 pub unsafe fn load() {
     let info = ::boot_info::get_info();
 
-    let mut i = 0;
-
-    for region in info.memory_map.iter() {
+    for (i, region) in info.memory_map.iter().enumerate() {
         let rtype = match region.region_type {
             MemoryRegionType::Usable => REGION_FREE,
             _ => REGION_USED,
         };
 
         MEMORY_MAP[i] = MemoryRegion::new(
-            region.range.start_frame_number as u64,
-            region.range.end_frame_number as u64 - region.range.start_frame_number as u64,
+            region.range.start_frame_number,
+            region.range.end_frame_number - region.range.start_frame_number,
             rtype,
         );
-        i += 1;
     }
 }
 

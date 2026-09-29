@@ -1,6 +1,6 @@
-///! This module provides access to the kernel's signal bus.
+//! This module provides access to the kernel's signal bus.
 
-use crate::syscall::{self, *};
+use crate::syscall::*;
 /// This signal is sent to a process when a key is pressed.
 pub const SIGNAL_KEYBOARD: u64 = 1;
 

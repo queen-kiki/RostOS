@@ -5,7 +5,7 @@ pub type Path<'a> = &'a [u8];
 pub const SEPARATOR: u8 = b'/';
 
 pub fn head(path: Path) -> Path {
-    path.split(|&b| b == SEPARATOR).last().unwrap_or(&[])
+    path.split(|&b| b == SEPARATOR).next_back().unwrap_or(&[])
 }
 
 pub fn tail(path: Path) -> Path {
@@ -41,7 +41,7 @@ impl<'a> Iterator for PathIter<'a> {
         for i in self.index..self.split.len() {
             let segment = self.split[i];
 
-            if segment.len() > 0 {
+            if !segment.is_empty() {
                 res = Some(segment);
                 self.index = i + 1;
                 break;

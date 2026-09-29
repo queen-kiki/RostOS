@@ -45,7 +45,7 @@ pub fn copy_data(
 ) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
-    if buffer.len() > 0 {
+    if !buffer.is_empty() {
         return None;
     }
 
@@ -62,7 +62,7 @@ pub fn copy_data_len(
 ) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
-    if buffer.len() > 0 {
+    if !buffer.is_empty() {
         return None;
     }
 
@@ -84,7 +84,7 @@ pub fn copy_data_slice(
 ) -> Option<()> {
     let node = get_node(disk, node_addr)?;
 
-    if buffer.len() > 0 {
+    if !buffer.is_empty() {
         buffer.clear();
         return None;
     }

@@ -1,4 +1,4 @@
-///! This module contains the system call procedure as well as supported system call ids.
+//! This module contains the system call procedure as well as supported system call ids.
 
 /// This system call prints a message to the kernel's debug console.
 pub const SYS_DEBUG_PRINT: u64 = 0x0;
@@ -57,22 +57,22 @@ extern "C" {
 #[macro_export]
 macro_rules! syscall {
     ($rdi:expr) => {
-        crate::syscall::_syscall($rdi as _, 0, 0, 0, 0, 0)
+        $crate::syscall::_syscall($rdi as _, 0, 0, 0, 0, 0)
     };
     ($rdi:expr, $rsi:expr) => {
-        crate::syscall::_syscall($rdi as _, $rsi as _, 0, 0, 0, 0)
+        $crate::syscall::_syscall($rdi as _, $rsi as _, 0, 0, 0, 0)
     };
     ($rdi:expr, $rsi:expr, $rdx:expr) => {
-        crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, 0, 0, 0)
+        $crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, 0, 0, 0)
     };
     ($rdi:expr, $rsi:expr, $rdx:expr, $rcx:expr) => {
-        crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, $rcx as _, 0, 0)
+        $crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, $rcx as _, 0, 0)
     };
     ($rdi:expr, $rsi:expr, $rdx:expr, $rcx:expr, $r8:expr) => {
-        crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, $rcx as _, $r8 as _, 0)
+        $crate::syscall::_syscall($rdi as _, $rsi as _, $rdx as _, $rcx as _, $r8 as _, 0)
     };
     ($rdi:expr, $rsi:expr, $rdx:expr, $rcx:expr, $r8:expr, $r9:expr) => {
-        crate::syscall::_syscall(
+        $crate::syscall::_syscall(
             $rdi as _, $rsi as _, $rdx as _, $rcx as _, $r8 as _, $r9 as _,
         )
     };

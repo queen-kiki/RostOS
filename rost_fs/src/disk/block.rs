@@ -105,16 +105,14 @@ pub fn write_to_data_block(
     mut data_block_addr: DiskAddress,
     data: &[u8],
 ) -> Option<()> {
-    'blocks: for block_nr in 0..=data.len() / BLOCK_DATA_SIZE {
+    for chunk in data.chunks(BLOCK_DATA_SIZE).chain(core::iter::once(&[][..])) {
         let data_block = get_data_block(disk, data_block_addr)?;
 
-        'bytes: for byte_nr in 0..BLOCK_DATA_SIZE {
-            let index = block_nr * BLOCK_DATA_SIZE + byte_nr;
+        data_block.data[..chunk.len()].copy_from_slice(chunk);
 
-            if index >= data.len() {
-                break 'blocks;
-            }
-            data_block.data[byte_nr] = data[index];
+        // A partially filled block is the last one.
+        if chunk.len() < BLOCK_DATA_SIZE {
+            break;
         }
 
         if data_block.next_block.is_null() {
@@ -130,32 +128,11 @@ pub fn write_to_data_block(
 
 pub fn copy_from_data_block(
     disk: &impl Disk,
-    mut data_block_addr: DiskAddress,
+    data_block_addr: DiskAddress,
     buffer: &mut Vec<u8>,
     size: u64,
 ) -> Option<()> {
-    'blocks: for block_nr in 0..=size as usize / BLOCK_DATA_SIZE {
-        let data_block = get_data_block(disk, data_block_addr)?;
-
-        'bytes: for byte_nr in 0..BLOCK_DATA_SIZE {
-            let index = block_nr * BLOCK_DATA_SIZE + byte_nr;
-
-            if index >= size as usize {
-                break 'blocks;
-            }
-
-            buffer.push(data_block.data[byte_nr]);
-        }
-
-        if data_block.next_block.is_null() {
-            buffer.clear();
-            return None;
-        }
-
-        data_block_addr = data_block.next_block;
-    }
-
-    Some(())
+    copy_slice_from_data_block(disk, data_block_addr, buffer, 0, size)
 }
 
 pub fn copy_slice_from_data_block(
@@ -165,19 +142,21 @@ pub fn copy_slice_from_data_block(
     start: u64,
     end: u64,
 ) -> Option<()> {
-    'blocks: for block_nr in 0..=end as usize / BLOCK_DATA_SIZE {
+    let (start, end) = (start as usize, end as usize);
+
+    for block_nr in 0..=end / BLOCK_DATA_SIZE {
         let data_block = get_data_block(disk, data_block_addr)?;
 
-        'bytes: for byte_nr in 0..BLOCK_DATA_SIZE {
-            let index = block_nr * BLOCK_DATA_SIZE + byte_nr;
+        let block_start = block_nr * BLOCK_DATA_SIZE;
+        let block_end = (block_start + BLOCK_DATA_SIZE).min(end);
 
-            if index >= end as usize {
-                break 'blocks;
-            }
+        if start < block_end {
+            buffer.extend_from_slice(&data_block.data[start.max(block_start) - block_start..block_end - block_start]);
+        }
 
-            if index >= start as usize {
-                buffer.push(data_block.data[byte_nr]);
-            }
+        // A partially read block is the last one.
+        if block_end - block_start < BLOCK_DATA_SIZE {
+            break;
         }
 
         if data_block.next_block.is_null() {

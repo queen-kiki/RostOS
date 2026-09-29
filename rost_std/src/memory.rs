@@ -1,6 +1,6 @@
-///! This module contains procedues to change the virtual address space.
+//! This module contains procedures to change the virtual address space.
 
-use crate::syscall::{self, *};
+use crate::syscall::*;
 
 /// Denotes the maximal address a user process can use.
 pub const MAX_ADDRESS: u64 = 0x0000_8000_0000_0000 - 1;

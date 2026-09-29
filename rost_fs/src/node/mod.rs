@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use crate::disk::{self, Disk};
 
+#[allow(clippy::module_inception)]
 pub mod node;
 pub mod tree;
 

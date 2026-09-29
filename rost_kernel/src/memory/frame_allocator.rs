@@ -79,7 +79,7 @@ unsafe impl FrameAllocator<Size4KiB> for FrameStackAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         if let Some(frame) = self.free_stack.pop() {
             Some(PhysFrame::containing_address(PhysAddr::new(
-                (frame * PAGE_SIZE) as u64,
+                frame * PAGE_SIZE,
             )))
         } else if self.r_index() > 0 {
             let frame = self.c_region().start;
@@ -92,7 +92,7 @@ unsafe impl FrameAllocator<Size4KiB> for FrameStackAllocator {
             }
 
             Some(PhysFrame::containing_address(PhysAddr::new(
-                (frame * PAGE_SIZE) as u64,
+                frame * PAGE_SIZE,
             )))
         } else {
             unimplemented!()
@@ -102,7 +102,7 @@ unsafe impl FrameAllocator<Size4KiB> for FrameStackAllocator {
 
 impl FrameDeallocator<Size4KiB> for FrameStackAllocator {
     unsafe fn deallocate_frame(&mut self, frame: PhysFrame<Size4KiB>) {
-        let frame = frame.start_address().as_u64() as u64 / PAGE_SIZE;
+        let frame = frame.start_address().as_u64() / PAGE_SIZE;
         if !self.free_stack.push(frame) {
             println!("framestack full!");
         }

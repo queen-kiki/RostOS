@@ -99,7 +99,7 @@ impl<'a> FrameAllocator<'a> {
                     // Case: (r = `r`, R = `region`)
                     // ----rrrrrrrrrrr----
                     // ------RRRR---------
-                    let mut behind_r = r.clone();
+                    let mut behind_r = *r;
                     behind_r.range.start_frame_number = region.range.end_frame_number;
                     r.range.end_frame_number = region.range.start_frame_number;
                     self.memory_map.add_region(behind_r);

@@ -1,5 +1,5 @@
 [build]
-target = "x86_64-bootloader.json"
+target = "../x86_64-rost_os.json"
 
 [unstable]
 build-std = ["core", "compiler_builtins"]

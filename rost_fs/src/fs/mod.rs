@@ -80,11 +80,11 @@ pub fn get_header(tree: &mut NodeTree<impl Disk>, id: NodeID) -> FSResult<NodeHe
 
     node.read_data_slice(&mut buf, 0, NODEHDR_SIZE as u64);
 
-    if buf.len() == 0 {
+    if buf.is_empty() {
         return Err(FSError::InvalidHdr);
     }
 
-    Ok(unsafe { (*(buf.as_ptr() as *const NodeHeader)).clone() })
+    Ok(unsafe { (*(buf.as_ptr() as *const NodeHeader)) })
 }
 
 pub fn get_content(tree: &mut NodeTree<impl Disk>, id: NodeID, buf: &mut Vec<u8>) -> FSResult<()> {
@@ -137,7 +137,7 @@ pub fn is_dir(tree: &mut NodeTree<impl Disk>, id: NodeID) -> FSResult<()> {
 }
 
 pub fn validate_name(name: &[u8]) -> FSResult<&[u8]> {
-    if !name.contains(&b';') && !name.contains(&b'\n') && name.len() > 0 {
+    if !name.contains(&b';') && !name.contains(&b'\n') && !name.is_empty() {
         Ok(name)
     } else {
         Err(FSError::InvalidName(
@@ -178,7 +178,7 @@ pub fn add_child(
 
     buf.extend(name.iter());
     buf.push(b';');
-    buf.extend(unsafe { core::mem::transmute::<NodeID, [u8; 8]>(node).iter() });
+    buf.extend(node.to_ne_bytes().iter());
     buf.push(b'\n');
 
     write(dir, NodeHeader::DIRECTORY, &buf, tree);
@@ -196,7 +196,7 @@ pub fn list_children(
     let mut children = vec![];
 
     for line in buf.split(|&b| b == b'\n') {
-        if line.len() < 1 {
+        if line.is_empty() {
             continue;
         }
 

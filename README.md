@@ -15,17 +15,25 @@ To make use of these features, there are system calls which are abstracted away 
 
 *DISCLAIMER: Only works reliably on Linux.*
 
-To begin, you first need to download the language itself. Because an OS requires certain unstable features, a nightly version of the Rust toolchain has to be installed. This can be done using [rustup](https://rustup.rs/), the official rust toolchain installation program. Make sure that the `~/.cargo/bin` is added to `$PATH`. 
+To begin, you first need to download the language itself. Because an OS requires certain unstable features, a nightly version of the Rust toolchain has to be installed. This can be done using [rustup](https://rustup.rs/), the official rust toolchain installation program. Make sure that the `~/.cargo/bin` is added to `$PATH`. The exact toolchain and its components (`rust-src`, `llvm-tools`) are pinned in `rust-toolchain.toml`; to install them up front, run this in the repository:
 
-To run the OS you need some sort of virtual machine. To use the automatic build scripts, the `qemu-system-x86_64` binary has to be present in `$PATH`, which can be downloaded from [www.qemu.org](https://www.qemu.org) or preferably installed with your distribution's package manager.
+```sh
+rustup toolchain install
+```
 
-Using the automatic build scripts below also requires Python 3 to be installed.
+To run the OS you need some sort of virtual machine. The `qemu-system-x86_64` binary has to be present in `$PATH`, which can be downloaded from [www.qemu.org](https://www.qemu.org) or preferably installed with your distribution's package manager.
 
-Once these prerequisites are available, you can automatically install all additional dependencies by running `python rost.py install`. If the install script works, you can then build the OS using `python rost.py build` and then `python rost.py run` to run it.
+To build RostOS and start it in QEMU, run this from the repository root:
 
-The build command will automatically build any rust projects found in the `programs` folder and include them in the OS' `bin` directory.
+```sh
+cargo run                # builds everything, assembles bin/RostOS.bin and starts QEMU
+cargo run -- --virt      # the same with KVM
+cargo run -- --no-run    # only assemble bin/RostOS.bin
+```
 
-To write your own programs you can take a look at the `pong` program. If you copy it, delete its logic and change its name in `Cargo.toml` you'll have a nice template.
+The top-level crate builds the `programs` workspace and packs the binaries into the ramdisk's `bin` directory (`bin/disk.img`), builds the kernel, which embeds that image, and the bootloader, and then assembles the boot image.
+
+To write your own programs you can take a look at the `pong` program. If you copy it, delete its logic, change its name in `Cargo.toml` and add it to the `members` of `programs/Cargo.toml`, you'll have a nice template.
 
 
 

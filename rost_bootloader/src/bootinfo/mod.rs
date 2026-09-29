@@ -42,7 +42,7 @@ impl BootInfo {
 }
 
 extern "C" {
-    fn _improper_ctypes_check(_boot_info: BootInfo);
+    fn _improper_ctypes_check_boot_info(_boot_info: BootInfo);
 }
 
 use x86_64::{

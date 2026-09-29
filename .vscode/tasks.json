@@ -4,19 +4,19 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run RostOS",
-            "type": "shell",
-            "command": "python rost.py run"
-        },
-        {
             "label": "Build RostOS",
             "type": "shell",
-            "command": "python rost.py build"
+            "command": "cargo run -- --no-run"
         },
         {
             "label": "Build & Run RostOS",
             "type": "shell",
-            "command": "python rost.py build_run"
+            "command": "cargo run"
+        },
+        {
+            "label": "Build & Run RostOS (KVM)",
+            "type": "shell",
+            "command": "cargo run -- --virt"
         },
     ]
 }

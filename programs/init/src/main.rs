@@ -6,11 +6,7 @@
 extern crate rost_std;
 
 use rost_std::process;
-use rost_std::signal;
-use rost_std::vga;
-use rost_std::debug;
 
-use core::sync::atomic::*;
 
 
 #[no_mangle]

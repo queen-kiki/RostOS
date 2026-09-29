@@ -1,6 +1,6 @@
-///! This module allows access to the time-keeping functionality of the OS. Time is not kept in real-life units, but in PIT-ticks.
+//! This module allows access to the time-keeping functionality of the OS. Time is not kept in real-life units, but in PIT-ticks.
 
-use crate::syscall::{self, *};
+use crate::syscall::*;
 
 /// This struct represents a point in time.
 #[derive(Copy, Clone)]

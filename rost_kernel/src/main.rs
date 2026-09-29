@@ -44,7 +44,7 @@ use linked_list_allocator::LockedHeap;
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
-static DISK_IMAGE: &'static [u8] = include_bytes!("../../disk.img");
+static DISK_IMAGE: &[u8] = include_bytes!(env!("ROST_DISK_IMAGE"));
 
 use consts::*;
 
@@ -104,7 +104,9 @@ pub extern "C" fn kernel_main() -> ! {
         // activate multiprocessing
         process::activate_scheduler();
 
-        // use kernel process as idle spin.
-        loop {}
+        // use kernel process as idle loop.
+        loop {
+            x86_64::instructions::hlt();
+        }
     }
 }

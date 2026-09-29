@@ -1,9 +1,7 @@
-disk.img
 **/target/
 **/*.bin
 **/*.dmp
 **/dump
 **/bin
-**/__pycache__
 **/Cargo.lock
 **/cargo.lock

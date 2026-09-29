@@ -2,7 +2,7 @@
 
 use core::fmt;
 
-use crate::syscall::{self, *};
+use crate::syscall::*;
 
 struct DebugPrinter;
 
@@ -18,7 +18,7 @@ impl fmt::Write for DebugPrinter {
 
 /// Writes a string of ascii bytes to the kernel console.
 pub fn write_bytes(bytes: &[u8]) {
-    if bytes.len() == 0 {
+    if bytes.is_empty() {
         return;
     }
 

@@ -70,9 +70,9 @@ pub struct Writer {
 impl Writer {
     pub fn clear(&mut self) {
         self.column_position = 0;
-        for x in 0..BUFFER_WIDTH {
-            for y in 0..BUFFER_HEIGHT {
-                self.buffer.chars[y][x].write(ScreenChar {
+        for row in self.buffer.chars.iter_mut() {
+            for char in row.iter_mut() {
+                char.write(ScreenChar {
                     ascii_character: 0,
                     color_code: ColorCode::new(Color::Black, Color::Black),
                 });
@@ -128,8 +128,8 @@ impl Writer {
             ascii_character: b' ',
             color_code: ColorCode::new(Color::Black, Color::Black),
         };
-        for col in 0..BUFFER_WIDTH {
-            self.buffer.chars[row][col].write(blank);
+        for char in self.buffer.chars[row].iter_mut() {
+            char.write(blank);
         }
     }
 }

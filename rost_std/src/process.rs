@@ -1,6 +1,6 @@
-///! This module provides access to process control functionality.
+//! This module provides access to process control functionality.
 
-use crate::syscall::{self, *};
+use crate::syscall::*;
 
 /// This struct represents a process.
 pub struct Process {

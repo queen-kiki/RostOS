@@ -62,6 +62,12 @@ impl MemoryMap {
     }
 }
 
+impl Default for MemoryMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Deref for MemoryMap {
     type Target = [MemoryRegion];
 
@@ -208,5 +214,5 @@ impl From<E820MemoryRegion> for MemoryRegion {
 }
 
 extern "C" {
-    fn _improper_ctypes_check(_boot_info: MemoryMap);
+    fn _improper_ctypes_check_memory_map(_memory_map: MemoryMap);
 }

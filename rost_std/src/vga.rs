@@ -1,11 +1,8 @@
-use core::marker::PhantomData;
+//! This module provides an abstraction around the legacy VGA buffer. It uses an invisible buffer to quickly store changes and then the `vga::show` function to show them on screen.
+
 use core::ptr;
-///! This module provides an abstraction around the legacy VGA buffer. It uses an invisible buffer to quickly store changes and then the `vga::show` function to show them on screen.
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering;
-
-use crate::syscall;
-use crate::syscall::*;
 
 use crate::memory;
 
@@ -58,9 +55,9 @@ impl ColorCode {
     }
 }
 
-impl Into<u16> for ColorCode {
-    fn into(self) -> u16 {
-        (self.bg as u8 as u16) << 4 | self.fg as u8 as u16
+impl From<ColorCode> for u16 {
+    fn from(val: ColorCode) -> Self {
+        (val.bg as u8 as u16) << 4 | val.fg as u8 as u16
     }
 }
 
@@ -104,7 +101,7 @@ pub fn write_char_thru(x: usize, y: usize, chr: u8, color_code: ColorCode) {
 
     unsafe {
         VGA_BUFFER[VGA_WIDTH * y + x] = val;
-        *VGA_ADDRESS.offset((VGA_WIDTH * y + x) as isize) = val;
+        *VGA_ADDRESS.add(VGA_WIDTH * y + x) = val;
     }
 }
 
@@ -136,7 +133,7 @@ pub fn set_cursor(x: usize, y: usize) {
     write_char_thru(x, y, b' ', ColorCode::new(Color::Black, Color::White));
     unsafe {
         port::write(0x3D4, 0x0Au8);
-        port::write(0x3D5, (port::read::<u8>(0x3D5) & 0xC0u8));
+        port::write(0x3D5, port::read::<u8>(0x3D5) & 0xC0u8);
         port::write(0x3D4, 0x0Bu8);
         port::write(0x3D5, (port::read::<u8>(0x3D5) & 0xE0u8) | 0x00ff);
         port::write(0x3D4, 0x0Fu8);

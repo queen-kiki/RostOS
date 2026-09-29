@@ -126,14 +126,18 @@ pub extern "x86-interrupt" fn divide_by_zero(frame: InterruptStackFrame) {
 pub extern "x86-interrupt" fn debug(frame: InterruptStackFrame) {
     println!("DEBUG EXCEPTION\n{:#?}", frame);
     process::debug();
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 pub extern "x86-interrupt" fn bound_range_exceeded(frame: InterruptStackFrame) {
     println!("EXCEPTION: Bound Range Exceeded\n{:#?}", frame);
 
     process::debug();
-    loop {}
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 extern "C" {

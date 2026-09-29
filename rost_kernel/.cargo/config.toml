@@ -5,3 +5,16 @@ target = "x86_64-rust_kernel.json"
 build-std = ["core", "alloc", "compiler_builtins"]
 build-std-features = ["compiler-builtins-mem"]
 json-target-spec = true
+
+# `-Z build-std` compiles core from source, which trips future-incompat lints
+# that aren't ours to fix.
+[future-incompat-report]
+frequency = "never"
+
+# The ramdisk image the kernel embeds, built by `cargo run` at the top level.
+[env]
+ROST_DISK_IMAGE = { value = "../bin/disk.img", relative = true }
+
+# The kernel can't run on the host; the top-level crate boots it in QEMU.
+[target.x86_64-rust_kernel]
+runner = ["echo", "RostOS is started with `cargo run` from the repository root"]
