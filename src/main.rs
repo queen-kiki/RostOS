@@ -63,11 +63,13 @@ fn main() {
     }
 }
 
-/// What a finished step reports: a short summary for its status line and the
-/// output of the tools it ran, shown only when it contains warnings.
+/// What a finished step reports: a short summary for its status line, details
+/// printed below it, and the output of the tools it ran, shown only when it
+/// contains warnings.
 #[derive(Default)]
 struct Done {
     summary: String,
+    details: String,
     log: String,
 }
 
@@ -102,6 +104,7 @@ fn step(name: &str, f: impl FnOnce() -> Result<Done, Error>) {
                 style(format!("{:>5.1}s", start.elapsed().as_secs_f64())).dim(),
                 done.summary
             );
+            eprint!("{}", done.details);
             if console::strip_ansi_codes(&done.log).contains("warning") {
                 eprint!("{}", done.log);
             }
@@ -193,7 +196,39 @@ fn make_ramdisk(root: &Path) -> Result<Done, Error> {
         format!("{:.0}% used", used * 100.)
     };
 
-    Ok(Done { summary, ..Done::default() })
+    let mut details = String::new();
+    tree(&root.join("bin/ramdisk"), "  ", &mut details);
+
+    Ok(Done { summary, details, ..Done::default() })
+}
+
+/// Renders the contents of `dir` as a tree, directories first, with file sizes.
+fn tree(dir: &Path, prefix: &str, out: &mut String) {
+    let mut entries: Vec<_> = fs::read_dir(dir).unwrap().map(|e| e.unwrap().path()).collect();
+    entries.sort_by_key(|path| (!path.is_dir(), path.file_name().unwrap().to_owned()));
+
+    let width = entries.iter().map(|p| p.file_name().unwrap().len()).max().unwrap_or(0);
+
+    for (i, path) in entries.iter().enumerate() {
+        let last = i == entries.len() - 1;
+        let name = path.file_name().unwrap().to_string_lossy();
+        let branch = style(if last { "└── " } else { "├── " }).dim();
+
+        if path.is_dir() {
+            out.push_str(&format!("{}{}{}\n", prefix, branch, style(format!("{}/", name)).blue().bold()));
+            let indent = if last { "    " } else { "│   " };
+            tree(path, &format!("{}{}", prefix, style(indent).dim()), out);
+        } else {
+            let size = fs::metadata(path).unwrap().len();
+            out.push_str(&format!(
+                "{}{}{:width$}  {}\n",
+                prefix,
+                branch,
+                name,
+                style(format!("{:>4} KiB", size.div_ceil(1024))).dim(),
+            ));
+        }
+    }
 }
 
 /// Locates one of the llvm-tools binaries shipped with the active toolchain.
