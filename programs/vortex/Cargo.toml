@@ -1,0 +1,7 @@
+[package]
+name = "vortex"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rost_std = { path = "../../rost_std" }
